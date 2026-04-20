@@ -1,0 +1,89 @@
+// backend/controllers/docenteController.js
+const pool = require('../db');
+
+const obtenerRespuestas = async (req, res) => {
+    try {
+        const respuestas = await pool.query(`
+            SELECT u.nombre AS usuario, u.matricula, r.titulo AS caso, 
+                re.justificacion, re.es_correcta, re.created_at
+            FROM respuestas re
+            JOIN usuarios u ON u.id = re.usuario_id
+            JOIN retos r ON r.id = re.reto_id
+            ORDER BY re.created_at DESC
+        `);
+        res.json(respuestas.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener respuestas.' });
+    }
+};
+
+// 19-04-2026
+const obtenerEstadisticas = async (req, res) => {
+    try {
+        // 1. Porcentaje de aciertos por categoría
+        const aciertosPorCategoria = await pool.query(`
+            SELECT c.nombre, 
+                COUNT(*) FILTER (WHERE re.es_correcta = true) AS correctas,
+                COUNT(*) AS total
+            FROM respuestas re
+            JOIN retos r ON r.id = re.reto_id
+            JOIN categorias c ON c.id = r.categoria_id
+            GROUP BY c.id
+        `);
+
+        // 2. XP de los alumnos (top 10)
+        const evolucionXP = await pool.query(`
+            SELECT u.nombre, u.xp
+            FROM usuarios u
+            WHERE u.rol = 'estudiante'
+            ORDER BY u.xp DESC
+            LIMIT 10
+        `);
+
+        // 3. Promedio de longitud de justificación por alumno (top 10)
+        const promedioJustificacion = await pool.query(`
+            SELECT u.nombre, AVG(LENGTH(re.justificacion)) AS promedio
+            FROM respuestas re
+            JOIN usuarios u ON u.id = re.usuario_id
+            GROUP BY u.id
+            ORDER BY promedio DESC
+            LIMIT 10
+        `);
+
+        // Enviar los tres conjuntos de datos en un solo objeto JSON
+        res.json({
+            aciertosPorCategoria: aciertosPorCategoria.rows,
+            evolucionXP: evolucionXP.rows,
+            promedioJustificacion: promedioJustificacion.rows
+        });
+    } catch (error) {
+        console.error('Error en obtenerEstadisticas:', error);
+        res.status(500).json({ error: 'Error al obtener estadísticas' });
+    }
+};
+
+
+// 18-04-2026
+// Eliminar una respuesta por su ID (solo docentes)
+const eliminarRespuesta = async (req, res) => {
+    const { id } = req.params;
+
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+        return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    try {
+        const result = await pool.query('DELETE FROM respuestas WHERE id = $1 RETURNING id', [id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Respuesta no encontrada' });
+        }
+        res.json({ mensaje: 'Respuesta eliminada correctamente' });
+    } catch (error) {
+        console.error('Error al eliminar respuesta:', error);
+        res.status(500).json({ error: 'Error del servidor al eliminar respuesta' });
+    }
+};
+
+module.exports = { obtenerRespuestas, eliminarRespuesta, obtenerEstadisticas };
