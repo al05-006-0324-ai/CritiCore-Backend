@@ -15,7 +15,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-    origin: "*",
+    origin: "https://criticore.netlify.app",
     optionsSuccessStatus: 200,
 }));
 app.use(express.json());
