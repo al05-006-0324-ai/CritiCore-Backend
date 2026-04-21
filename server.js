@@ -14,7 +14,10 @@ const geminiRoutes = require('./routes/geminiRoutes');   // ← NUEVA LÍNEA
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+    origin: "*",
+    optionsSuccessStatus: 200,
+}));
 app.use(express.json());
 
 // Rutas
