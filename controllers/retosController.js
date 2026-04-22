@@ -59,4 +59,25 @@ const agregarReto = async (req, res) => {
     }
 };
 
-module.exports = { obtenerCategoriasConRetos, obtenerRetosPorCategoria, agregarReto };
+
+// 22-04-2026
+const obtenerProgresoAlumno = async (req, res) => {
+    const usuario_id = req.usuario.id;
+    try {
+        const progreso = await pool.query(`
+            SELECT r.categoria_id, COUNT(DISTINCT r.id) AS total_retos,
+                   COUNT(DISTINCT re.reto_id) AS respondidos
+            FROM retos r
+            LEFT JOIN respuestas re ON re.reto_id = r.id AND re.usuario_id = $1
+            WHERE r.activo = true
+            GROUP BY r.categoria_id
+        `, [usuario_id]);
+        res.json(progreso.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener progreso' });
+    }
+};
+
+
+module.exports = { obtenerCategoriasConRetos, obtenerRetosPorCategoria, agregarReto, obtenerProgresoAlumno };

@@ -4,13 +4,16 @@ const { body } = require('express-validator');
 const { 
     obtenerCategoriasConRetos, 
     obtenerRetosPorCategoria,
-    agregarReto 
+    agregarReto, 
+    obtenerProgresoAlumno
 } = require('../controllers/retosController');
 const { verificarToken, verificarDocente } = require('../middleware/auth');
 const router = express.Router();
 
 router.get('/categorias', verificarToken, obtenerCategoriasConRetos);
 router.get('/categoria/:categoriaId', verificarToken, obtenerRetosPorCategoria);
+// 22-04-2026
+router.get('/progreso', verificarToken, obtenerProgresoAlumno);
 
 
 // Nueva ruta: solo docentes pueden crear retos
