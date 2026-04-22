@@ -24,30 +24,30 @@ const obtenerEstadisticas = async (req, res) => {
         // 1. Porcentaje de aciertos por categoría
         const aciertosPorCategoria = await pool.query(`
             SELECT c.nombre, 
-                COUNT(*) FILTER (WHERE re.es_correcta = true) AS correctas,
-                COUNT(*) AS total
+                   COUNT(*) FILTER (WHERE re.es_correcta = true AND re.estado = 'aprobada') AS correctas,
+                   COUNT(*) FILTER (WHERE re.estado = 'aprobada') AS total
             FROM respuestas re
             JOIN retos r ON r.id = re.reto_id
             JOIN categorias c ON c.id = r.categoria_id
             GROUP BY c.id
         `);
 
-        // 2. XP de los alumnos (top 10)
+        // 2. XP de los alumnos
         const evolucionXP = await pool.query(`
-            SELECT u.nombre, u.xp
+            SELECT u.nombre, u.xp, u.created_at
             FROM usuarios u
             WHERE u.rol = 'estudiante'
             ORDER BY u.xp DESC
             LIMIT 10
         `);
 
-        // 3. Promedio de longitud de justificación por alumno (top 10)
+        // 3. Promedio de longitud de justificación (solo respuestas aprobadas)
         const promedioJustificacion = await pool.query(`
             SELECT u.nombre, AVG(LENGTH(re.justificacion)) AS promedio
             FROM respuestas re
             JOIN usuarios u ON u.id = re.usuario_id
+            WHERE re.estado = 'aprobada'
             GROUP BY u.id
-            ORDER BY promedio DESC
             LIMIT 10
         `);
 
