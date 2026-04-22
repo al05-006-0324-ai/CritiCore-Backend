@@ -9,7 +9,7 @@ const retosRoutes = require('./routes/retosRoutes');
 const respuestasRoutes = require('./routes/respuestasRoutes');
 const docenteRoutes = require('./routes/docenteRoutes');
 // 17-04-2026
-const geminiRoutes = require('./routes/geminiRoutes');   // ← NUEVA LÍNEA
+
 
 const app = express();
 
@@ -29,7 +29,7 @@ app.use('/api/retos', retosRoutes);
 app.use('/api/respuestas', respuestasRoutes);
 app.use('/api/docente', docenteRoutes);
 // 17-04-2026
-app.use('/api/gemini', geminiRoutes);   // ← NUEVA LÍNEA
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

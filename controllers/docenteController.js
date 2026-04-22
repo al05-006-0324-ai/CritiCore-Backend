@@ -4,8 +4,8 @@ const pool = require('../db');
 const obtenerRespuestas = async (req, res) => {
     try {
         const respuestas = await pool.query(`
-            SELECT u.nombre AS usuario, u.matricula, r.titulo AS caso, 
-                re.justificacion, re.es_correcta, re.created_at
+            SELECT re.id, u.nombre AS usuario, u.matricula, r.titulo AS caso, 
+                   re.justificacion, re.es_correcta, re.estado, re.feedback_docente, re.created_at
             FROM respuestas re
             JOIN usuarios u ON u.id = re.usuario_id
             JOIN retos r ON r.id = re.reto_id
@@ -86,4 +86,41 @@ const eliminarRespuesta = async (req, res) => {
     }
 };
 
-module.exports = { obtenerRespuestas, eliminarRespuesta, obtenerEstadisticas };
+
+// 22/04/2026
+const revisarRespuesta = async (req, res) => {
+    const { id } = req.params;
+    const { estado, feedback_docente, otorgar_xp } = req.body; // estado: 'aprobada' o 'rechazada'
+    // solo docentes pueden llamar esto (ya verificado por middleware)
+
+    try {
+        // Obtener la respuesta y el usuario asociado
+        const respuesta = await pool.query(
+            'SELECT usuario_id, reto_id, es_correcta FROM respuestas WHERE id = $1',
+            [id]
+        );
+        if (respuesta.rows.length === 0) {
+            return res.status(404).json({ error: 'Respuesta no encontrada' });
+        }
+
+        // Actualizar estado y feedback
+        await pool.query(
+            'UPDATE respuestas SET estado = $1, feedback_docente = $2 WHERE id = $3',
+            [estado, feedback_docente, id]
+        );
+
+        // Si se aprueba y se indica otorgar XP, sumar 150 XP al alumno
+        if (estado === 'aprobada' && otorgar_xp) {
+            const usuario_id = respuesta.rows[0].usuario_id;
+            await pool.query('UPDATE usuarios SET xp = xp + 150 WHERE id = $1', [usuario_id]);
+        }
+
+        res.json({ mensaje: 'Respuesta revisada correctamente' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al revisar respuesta.' });
+    }
+};
+
+
+module.exports = { obtenerRespuestas, eliminarRespuesta, obtenerEstadisticas, revisarRespuesta };
